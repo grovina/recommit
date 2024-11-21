@@ -1,0 +1,20 @@
+[tool.poetry]
+name = "recommit"
+version = "0.0.1"
+description = "🤖 AI-powered Git commit message regenerator"
+authors = ["Your Name <your.email@example.com>"]
+readme = "README.md"
+packages = [{include = "recommit"}]
+
+[tool.poetry.dependencies]
+python = "^3.8"
+click = "^8.1.0"
+gitpython = "^3.1.0"
+openai = "^1.0.0"
+
+[tool.poetry.scripts]
+recommit = "recommit.cli:main"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

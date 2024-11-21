@@ -27,3 +27,25 @@ This approach guarantees that your Git history remains intact and recoverable, e
 - You change your mind about the modifications
 
 > 💡 **Tip**: Use `recommit --interactive` or `recommit -i` to enable interactive mode
+
+## Development
+
+This project uses Poetry for dependency management and packaging. To get started:
+
+1. Install Poetry if you haven't already:
+
+   ```bash
+   curl -sSL https://install.python-poetry.org | python3 -
+   ```
+
+1. Install dependencies:
+
+   ```bash
+   poetry install
+   ```
+
+1. Run the tool:
+
+   ```bash
+   poetry run recommit
+   ```
