@@ -47,8 +47,13 @@ def commit(api_key: str):
 
 @cli.command()
 @click.option('--api-key', envvar='OPENAI_API_KEY', help='OpenAI API key')
-def rewrite(api_key: str):
-    """Interactively rewrite recent commit messages."""
+@click.option('--recent', type=int, help='Limit to N most recent commits')
+def rewrite(api_key: str, recent: int):
+    """Interactively rewrite commit messages.
+    
+    If --recent N is specified, only process the N most recent commits.
+    Otherwise, process all commits in the current branch.
+    """
     if not api_key:
         raise click.ClickException(
             "OpenAI API key is required. Set OPENAI_API_KEY environment variable or use --api-key"
@@ -58,7 +63,7 @@ def rewrite(api_key: str):
         repo = GitRepo()
         generator = MessageGenerator(api_key)
         rewriter = InteractiveRewriter(repo, generator)
-        rewriter.start()
+        rewriter.start(recent)
     except KeyboardInterrupt:
         click.echo("\nOperation cancelled by user")
     except Exception as e:

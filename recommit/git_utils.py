@@ -19,9 +19,15 @@ class GitRepo:
         new_branch.checkout()
         return backup_name
         
-    def get_commits(self, count: int = 10):
-        """Returns recent commits for processing."""
-        return list(self.repo.iter_commits('HEAD', max_count=count))
+    def get_commits(self, count: int = None):
+        """Returns commits for processing.
+        
+        Args:
+            count: If specified, limit to this many recent commits
+        """
+        if count is not None:
+            return list(self.repo.iter_commits('HEAD', max_count=count))
+        return list(self.repo.iter_commits('HEAD'))
         
     def get_commit_diff(self, commit: Commit) -> str:
         """Get the diff for a specific commit."""
@@ -47,3 +53,11 @@ class GitRepo:
     def create_commit(self, message: str):
         """Create a new commit with the staged changes."""
         self.repo.index.commit(message)
+    
+    def get_current_branch(self) -> str:
+        """Returns the name of the current branch."""
+        return self.repo.active_branch.name
+    
+    def checkout_branch(self, branch_name: str):
+        """Checkout the specified branch."""
+        self.repo.git.checkout(branch_name)

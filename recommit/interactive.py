@@ -8,16 +8,27 @@ class InteractiveRewriter:
     def __init__(self, repo, generator):
         self.repo = repo
         self.generator = generator
+        self.original_branch = None
         
-    def start(self):
-        """Start the interactive rewriting process."""
-        # Create backup first
+    def start(self, recent: int = None):
+        """Start the interactive rewriting process.
+        
+        Args:
+            recent: If specified, limit to this many recent commits
+        """
+        # Store current branch and create backup
+        self.original_branch = self.repo.get_current_branch()
         backup_branch = self.repo.create_backup_branch()
         click.echo(f"Created backup branch: {backup_branch}")
         
-        # Get recent commits
-        commits = self.repo.get_commits(count=10)
-        self._process_commits(commits)
+        try:
+            # Get commits
+            commits = self.repo.get_commits(count=recent)  # Pass None to get all commits
+            self._process_commits(commits)
+        finally:
+            # Always return to original branch
+            self.repo.checkout_branch(self.original_branch)
+            click.echo(f"\nReturned to branch: {self.original_branch}")
         
     def _process_commits(self, commits: List[Commit]):
         """Process each commit interactively."""
