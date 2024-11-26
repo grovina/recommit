@@ -34,9 +34,10 @@ class InteractiveRewriter:
         """Process each commit interactively."""
         for commit in reversed(commits):  # Start with oldest commit
             click.echo("\n" + "="*50)
-            click.echo(f"Commit: {commit.hexsha[:8]}")
-            click.echo(f"Original message:\n{commit.message.strip()}")
-            click.echo(f"Date: {commit.authored_datetime}")
+            click.echo(f"Commit: {click.style(commit.hexsha[:8], fg='yellow')}")
+            click.echo(click.style("Original message:", fg='blue', bold=True))
+            click.echo(click.style(commit.message.strip(), fg='blue'))
+            click.echo(f"Date: {click.style(str(commit.authored_datetime), fg='cyan')}")
             
             # Get the diff for this commit
             diff = self.repo.get_commit_diff(commit)
@@ -45,7 +46,8 @@ class InteractiveRewriter:
             click.echo("\nGenerating improved message...")
             new_message = self.generator.generate_message(diff, commit.message)
             
-            click.echo(f"\nProposed message:\n{new_message}")
+            click.echo(click.style("\nProposed message:", fg='green', bold=True))
+            click.echo(click.style(new_message, fg='green'))
             
             # Ask user what to do
             choice = click.prompt(
