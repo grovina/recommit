@@ -15,8 +15,7 @@ def cli():
 
 @cli.command()
 @click.option('--api-key', envvar='OPENAI_API_KEY', help='OpenAI API key')
-@click.option('--count', '-n', default=10, help='Number of commits to process')
-def rewrite(api_key: str, count: int):
+def rewrite(api_key: str):
     """Interactively rewrite recent commit messages."""
     if not api_key:
         raise click.ClickException(
@@ -27,7 +26,7 @@ def rewrite(api_key: str, count: int):
         repo = GitRepo()
         generator = MessageGenerator(api_key)
         rewriter = InteractiveRewriter(repo, generator)
-        rewriter.start(count)
+        rewriter.start()
     except KeyboardInterrupt:
         click.echo("\nOperation cancelled by user")
     except Exception as e:
