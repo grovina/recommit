@@ -26,9 +26,8 @@ class InteractiveRewriter:
             commits = self.repo.get_commits(count=recent)
             self._process_commits(commits)
             
-            # After successful processing, update the original branch
-            current_commit = self.repo.repo.head.commit.hexsha
-            self.repo.update_branch(self.original_branch, current_commit)
+            # After successful processing, force update the original branch to our new history
+            self.repo.force_update_branch(self.original_branch)
             self.repo.checkout_branch(self.original_branch)
             
             if click.confirm("Delete backup branch?", default=True):

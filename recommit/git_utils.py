@@ -78,3 +78,7 @@ class GitRepo:
     def update_branch(self, branch_name: str, commit_sha: str):
         """Update a branch to point to a specific commit."""
         self.repo.git.branch('-f', branch_name, commit_sha)
+    
+    def force_update_branch(self, branch_name: str):
+        """Force update a branch to point to the current HEAD."""
+        self.repo.git.branch('-f', branch_name)
