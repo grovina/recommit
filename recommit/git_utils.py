@@ -15,7 +15,6 @@ class GitRepo:
     def create_backup_branch(self) -> str:
         """Creates a backup branch with current state."""
         backup_name = f"recommit-backup-{int(time.time())}"
-        current = self.repo.active_branch
         new_branch = self.repo.create_head(backup_name)
         new_branch.checkout()
         return backup_name

@@ -1,6 +1,5 @@
-import os
-
 import click
+from dotenv import load_dotenv
 
 from . import __version__
 from .git_utils import GitRepo
@@ -12,7 +11,7 @@ from .message_generator import MessageGenerator
 @click.version_option(__version__)
 def cli():
     """🤖 AI-powered Git commit message regenerator."""
-    pass
+    load_dotenv()
 
 @cli.command()
 @click.option('--api-key', envvar='OPENAI_API_KEY', help='OpenAI API key')
