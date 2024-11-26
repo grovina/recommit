@@ -1,4 +1,5 @@
 import os
+import subprocess
 import tempfile
 import time
 
@@ -38,30 +39,37 @@ class GitRepo:
             no_prefix=True
         )
     
-    def update_commit_message(self, commit: Commit, new_message: str):
-        """Update the message of a specific commit using git filter-branch."""
-        # Create a temporary file for the new message
-        with tempfile.NamedTemporaryFile(mode='w', delete=False) as f:
-            f.write(new_message)
-            msg_file = f.name
+    def update_commit_messages(self, commit_message_map: dict):
+        """Update multiple commit messages using git-filter-repo."""
+        # Ensure there are no unstaged changes
+        if self.repo.is_dirty(untracked_files=True):
+            raise ValueError("Cannot rewrite history with unstaged changes. Please commit or stash them first.")
         
+        # Prepare the commit callback script with the mapping
+        mapping_items = ',\n    '.join(
+            f'"{sha}": "{new_message.replace(\'"\', \'\\\"\')}"' for sha, new_message in commit_message_map.items()
+        )
+        commit_callback = f"""
+commit_mapping = {{
+    {mapping_items}
+}}
+
+if commit.original_id.decode('utf-8') in commit_mapping:
+    commit.message = commit_mapping[commit.original_id.decode('utf-8')].encode('utf-8')
+"""
         try:
-            # Use git filter-branch to rewrite the commit message
-            # This is more reliable than interactive rebase
-            self.repo.git.filter_branch(
-                f'--msg-filter \'if [ "$GIT_COMMIT" = "{commit.hexsha}" ]; then cat {msg_file}; else cat; fi\'',
-                commit.hexsha + '^..HEAD',
-                shell=True
+            subprocess.run(
+                [
+                    'git', 'filter-repo',
+                    '--force',
+                    '--commit-callback', commit_callback
+                ],
+                check=True,
+                cwd=self.repo.working_tree_dir
             )
-        finally:
-            # Clean up temporary file
-            os.unlink(msg_file)
-            # Clean up filter-branch backup
-            backup_dir = os.path.join(self.repo.git_dir, 'refs', 'original')
-            if os.path.exists(backup_dir):
-                import shutil
-                shutil.rmtree(backup_dir)
-    
+        except subprocess.CalledProcessError as e:
+            raise RuntimeError(f"git-filter-repo failed: {e}")
+        
     def get_staged_diff(self) -> str:
         """Get the diff of staged changes."""
         return self.repo.git.diff('--cached')
@@ -77,7 +85,7 @@ class GitRepo:
     def checkout_branch(self, branch_name: str):
         """Checkout the specified branch."""
         self.repo.git.checkout(branch_name)
-
+    
     def update_branch(self, branch_name: str, commit_sha: str):
         """Update a branch to point to a specific commit."""
         self.repo.git.branch('-f', branch_name, commit_sha)

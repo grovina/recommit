@@ -98,6 +98,17 @@ files = [
 test = ["pytest (>=6)"]
 
 [[package]]
+name = "git-filter-repo"
+version = "2.45.0"
+description = "Quickly rewrite git repository history"
+optional = false
+python-versions = ">=3.5"
+files = [
+    {file = "git_filter_repo-2.45.0-py3-none-any.whl", hash = "sha256:63cd3208b92309e473e3d69e90195b445751d34be16880f6ffd5998c846bdefd"},
+    {file = "git_filter_repo-2.45.0.tar.gz", hash = "sha256:2fa80ff8da54382a6e189bc1522dc986ee7a52abcbe9e28192f73c0f6c8b5ea9"},
+]
+
+[[package]]
 name = "gitdb"
 version = "4.0.11"
 description = "Git Object Database"
@@ -509,4 +520,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8"
-content-hash = "965f818b4df02aa71fe68f87f751040525fefb5bce92878fcf3e6042e80f2a7d"
+content-hash = "d83a7d188d269c7857e55e0039509bb8e11c4618ab2b3a2be246d996319356cc"

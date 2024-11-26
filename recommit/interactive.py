@@ -16,17 +16,26 @@ class InteractiveRewriter:
         Args:
             recent: If specified, limit to this many recent commits
         """
+        # Ensure working directory is clean
+        if self.repo.repo.is_dirty(untracked_files=True):
+            raise click.ClickException("Cannot rewrite history with unstaged changes. Please commit or stash them first.")
+        
         # Store current branch and create backup
         self.original_branch = self.repo.get_current_branch()
         backup_branch = self.repo.create_backup_branch()
         click.echo(f"Created backup branch: {backup_branch}")
         
-        success = False
+        commit_message_map = {}
         try:
             # Get commits
             commits = self.repo.get_commits(count=recent)
             click.echo(f"\nProcessing {len(commits)} commits...")
-            self._process_commits(commits)
+            self._process_commits(commits, commit_message_map)
+            
+            if commit_message_map:
+                # Perform the rewrite with all collected commit message changes
+                self.repo.update_commit_messages(commit_message_map)
+                click.echo("All selected commit messages have been updated.")
             
             # After successful processing, force update the original branch to our new history
             self.repo.force_update_branch(self.original_branch)
@@ -34,19 +43,20 @@ class InteractiveRewriter:
             
         except Exception as e:
             click.echo(f"An error occurred: {e}")
+            success = False
         finally:
             # Always return to original branch
             self.repo.checkout_branch(self.original_branch)
             
             # Only offer to delete backup if successful
-            if success and click.confirm("Delete backup branch?", default=True):
+            if success and commit_message_map and click.confirm("Delete backup branch?", default=True):
                 self.repo.repo.delete_head(backup_branch, force=True)
             elif not success:
                 click.echo(f"Changes were not applied. Your original state is preserved in '{self.original_branch}'")
                 click.echo(f"The backup branch '{backup_branch}' contains the attempted changes")
         
-    def _process_commits(self, commits: List[Commit]):
-        """Process each commit interactively."""
+    def _process_commits(self, commits: List[Commit], commit_message_map: dict):
+        """Process each commit interactively and collect new messages."""
         total_commits = len(commits)
         
         for idx, commit in enumerate(reversed(commits)):  # Start with oldest commit
@@ -85,11 +95,13 @@ class InteractiveRewriter:
             elif choice == 'skip':
                 continue
             elif choice == 'edit':
-                new_message = click.edit(new_message)
-                if not new_message:
+                edited_message = click.edit(new_message)
+                if edited_message:
+                    new_message = edited_message.strip()
+                else:
                     click.echo("No changes made, skipping...")
                     continue
             
             if choice in ['accept', 'edit']:
-                self.repo.update_commit_message(commit, new_message)
-                click.echo("Message updated!")
+                commit_message_map[commit.hexsha] = new_message
+                click.echo("Message queued for update!")
