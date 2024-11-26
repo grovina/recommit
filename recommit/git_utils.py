@@ -41,15 +41,20 @@ class GitRepo:
     def update_commit_message(self, commit: Commit, new_message: str):
         """Update the message of a specific commit using git rebase."""
         # Get the commit hash for the parent of our target commit
-        parent = commit.parents[0].hexsha if commit.parents else None
         target = commit.hexsha
         
         # Create a git rebase todo script
         with tempfile.NamedTemporaryFile(mode='w', delete=False) as f:
-            # Write rebase commands: reword the target commit, pick all others
-            for c in self.repo.iter_commits(f'{parent}..HEAD', reverse=True):
-                action = 'reword' if c.hexsha == target else 'pick'
-                f.write(f'{action} {c.hexsha} {c.message.splitlines()[0]}\n')
+            # For the first commit, we need to handle it differently
+            if not commit.parents:
+                # Just write the reword command for the first commit
+                f.write(f'reword {target} {commit.message.splitlines()[0]}\n')
+            else:
+                # Write rebase commands: reword the target commit, pick all others
+                parent = commit.parents[0].hexsha
+                for c in self.repo.iter_commits(f'{parent}..HEAD', reverse=True):
+                    action = 'reword' if c.hexsha == target else 'pick'
+                    f.write(f'{action} {c.hexsha} {c.message.splitlines()[0]}\n')
             todo_file = f.name
             
         # Create a message file
@@ -63,8 +68,8 @@ class GitRepo:
             env['GIT_SEQUENCE_EDITOR'] = f'cat {todo_file} >'
             env['EDITOR'] = f'cat {msg_file} >'
             
-            # Start the rebase from the parent commit
-            base = f'{parent}^' if parent else '--root'
+            # Start the rebase
+            base = '--root' if not commit.parents else f'{commit.parents[0].hexsha}^'
             self.repo.git.rebase(
                 '-i', base,
                 env=env
