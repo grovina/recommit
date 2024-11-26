@@ -21,6 +21,7 @@ class InteractiveRewriter:
         backup_branch = self.repo.create_backup_branch()
         click.echo(f"Created backup branch: {backup_branch}")
         
+        success = False
         try:
             # Get commits
             commits = self.repo.get_commits(count=recent)
@@ -28,13 +29,20 @@ class InteractiveRewriter:
             
             # After successful processing, force update the original branch to our new history
             self.repo.force_update_branch(self.original_branch)
-            self.repo.checkout_branch(self.original_branch)
+            success = True
             
-            if click.confirm("Delete backup branch?", default=True):
-                self.repo.repo.delete_head(backup_branch, force=True)
-
         except Exception as e:
             click.echo(f"An error occurred: {e}")
+        finally:
+            # Always return to original branch
+            self.repo.checkout_branch(self.original_branch)
+            
+            # Only offer to delete backup if successful
+            if success and click.confirm("Delete backup branch?", default=True):
+                self.repo.repo.delete_head(backup_branch, force=True)
+            elif not success:
+                click.echo(f"Changes were not applied. Your original state is preserved in '{self.original_branch}'")
+                click.echo(f"The backup branch '{backup_branch}' contains the attempted changes")
         
     def _process_commits(self, commits: List[Commit]):
         """Process each commit interactively."""
