@@ -49,3 +49,17 @@ This project uses Poetry for dependency management and packaging. To get started
    ```bash
    poetry run recommit
    ```
+
+## Usage
+
+### Generating commit messages for staged changes
+
+1. Stage your changes with `git add`
+2. Run `recommit commit`
+3. Review and confirm the generated message
+
+### Rewriting existing commits
+
+1. Navigate to your Git repository
+2. Run `recommit rewrite`
+3. The tool will analyze your commit history and help you improve previous commit messages

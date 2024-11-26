@@ -15,6 +15,38 @@ def cli():
 
 @cli.command()
 @click.option('--api-key', envvar='OPENAI_API_KEY', help='OpenAI API key')
+def commit(api_key: str):
+    """Generate and commit a message for staged changes."""
+    if not api_key:
+        raise click.ClickException(
+            "OpenAI API key is required. Set OPENAI_API_KEY environment variable or use --api-key"
+        )
+    
+    try:
+        repo = GitRepo()
+        generator = MessageGenerator(api_key)
+        
+        # Get staged changes diff
+        diff = repo.get_staged_diff()
+        if not diff:
+            raise click.ClickException("No staged changes found")
+            
+        # Generate message
+        click.echo("Generating commit message...")
+        message = generator.generate_message(diff, "")
+        
+        # Show and confirm
+        click.echo(f"\nProposed message:\n{message}")
+        if click.confirm("Create commit with this message?", default=True):
+            repo.create_commit(message)
+            click.echo("Commit created!")
+    except KeyboardInterrupt:
+        click.echo("\nOperation cancelled by user")
+    except Exception as e:
+        raise click.ClickException(str(e))
+
+@cli.command()
+@click.option('--api-key', envvar='OPENAI_API_KEY', help='OpenAI API key')
 def rewrite(api_key: str):
     """Interactively rewrite recent commit messages."""
     if not api_key:

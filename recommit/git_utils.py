@@ -39,3 +39,11 @@ class GitRepo:
             commit.hexsha + '^..HEAD',
             force=True
         )
+    
+    def get_staged_diff(self) -> str:
+        """Get the diff of staged changes."""
+        return self.repo.git.diff('--cached')
+    
+    def create_commit(self, message: str):
+        """Create a new commit with the staged changes."""
+        self.repo.index.commit(message)
