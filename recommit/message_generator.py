@@ -1,3 +1,5 @@
+import json
+
 import click
 from openai import OpenAI
 
@@ -31,7 +33,7 @@ class MessageGenerator:
             )
             
             # Parse the JSON response and extract the message
-            message = response.choices[0].message.content
-            return message.get('message', '').strip()
+            message_json = json.loads(response.choices[0].message.content)
+            return message_json['message'].strip()
         except Exception as e:
             raise click.ClickException(f"Failed to generate message: {str(e)}")
