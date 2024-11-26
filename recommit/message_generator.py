@@ -9,8 +9,9 @@ class MessageGenerator:
     def generate_message(self, diff: str, original_message: str) -> str:
         """Generate an improved commit message based on the diff."""
         try:
-            prompt = f"""Given the following git diff and original commit message,
-            generate a clear and descriptive commit message that explains the changes:
+            prompt = f"""Analyze the git diff and original commit message below, then generate a clear, concise, and descriptive commit message.
+            The message should be brief but informative (ideally under 72 characters).
+            Return the response in JSON format with a 'message' field containing the commit message.
             
             Original message: {original_message}
             
@@ -19,15 +20,18 @@ class MessageGenerator:
             """
             
             response = self.client.chat.completions.create(
-                model="gpt-4",
+                model="gpt-4o-mini",
                 messages=[
-                    {"role": "system", "content": "You are a helpful assistant that generates clear git commit messages."},
+                    {"role": "system", "content": "You are a helpful assistant that generates clear, concise git commit messages. Always respond with valid JSON containing a 'message' field. Keep messages brief but informative."},
                     {"role": "user", "content": prompt}
                 ],
-                temperature=0.7,  # Add some creativity but keep it focused
-                max_tokens=200    # Reasonable length for commit messages
+                temperature=0.7,
+                max_tokens=200,
+                response_format={"type": "json_object"}
             )
             
-            return response.choices[0].message.content.strip()
+            # Parse the JSON response and extract the message
+            message = response.choices[0].message.content
+            return message.get('message', '').strip()
         except Exception as e:
             raise click.ClickException(f"Failed to generate message: {str(e)}")
