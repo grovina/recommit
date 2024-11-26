@@ -81,6 +81,5 @@ class GitRepo:
     
     def force_update_branch(self, branch_name: str):
         """Force update a branch to point to the current HEAD."""
-        current_head = self.repo.head.commit.hexsha
-        self.repo.git.branch('-f', branch_name, current_head)
-        self.repo.heads[branch_name].set_commit(current_head)
+        current_sha = self.repo.head.commit.hexsha
+        self.repo.git.branch('-f', branch_name, current_sha)
