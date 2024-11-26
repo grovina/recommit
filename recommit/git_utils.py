@@ -46,15 +46,34 @@ class GitRepo:
             msg_file = f.name
         
         try:
-            # Use git commit-tree to create a new commit with the same tree but new message
+            # Create new commit with updated message
             new_commit = self.repo.git.commit_tree(
                 commit.tree.hexsha,
                 p=commit.parents[0].hexsha if commit.parents else None,
                 F=msg_file
             )
             
+            # Get the child commits that need to be rewritten
+            child_commits = list(self.repo.iter_commits(
+                f'{commit.hexsha}..HEAD',
+                reverse=True  # Start with the immediate child
+            ))
+            
             # Replace the old commit with the new one
             self.repo.git.reset('--hard', new_commit)
+            
+            # Replay all child commits on top of the new commit
+            for child in child_commits:
+                # Create a new commit with the same changes but new parent
+                new_tree = child.tree.hexsha
+                new_parent = self.repo.head.commit.hexsha
+                new_child = self.repo.git.commit_tree(
+                    new_tree,
+                    p=new_parent,
+                    m=child.message
+                )
+                self.repo.git.reset('--hard', new_child)
+                
         finally:
             # Clean up the temporary file
             os.unlink(msg_file)
