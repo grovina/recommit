@@ -46,11 +46,14 @@ class InteractiveRewriter:
         
     def _process_commits(self, commits: List[Commit]):
         """Process each commit interactively."""
-        for commit in reversed(commits):  # Start with oldest commit
+        total_commits = len(commits)
+        
+        for idx, commit in enumerate(reversed(commits)):  # Start with oldest commit
+            current_num = idx + 1
             click.echo("\n" + "="*80)  # Wider separator for better visibility
             
-            # Header section
-            click.echo(f"Processing commit: {click.style(commit.hexsha[:8], fg='yellow')}")
+            # Header section with progress
+            click.echo(f"Processing commit {click.style(f'{current_num}/{total_commits}', fg='bright_blue')}: {click.style(commit.hexsha[:8], fg='yellow')}")
             click.echo(f"Date: {click.style(str(commit.authored_datetime), fg='cyan')}")
             
             # Original message section
