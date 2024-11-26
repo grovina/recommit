@@ -1,4 +1,5 @@
 import os
+import tempfile
 import time
 
 from git import Commit, Repo
@@ -39,12 +40,24 @@ class GitRepo:
     
     def update_commit_message(self, commit: Commit, new_message: str):
         """Update the message of a specific commit."""
-        # Using git filter-branch to rewrite the commit message
-        self.repo.git.filter_branch(
-            f'--msg-filter \'if [ "$GIT_COMMIT" = "{commit.hexsha}" ]; then echo "{new_message}"; else cat; fi\'',
-            commit.hexsha + '^..HEAD',
-            force=True
-        )
+        # Create a temporary file with the new message
+        with tempfile.NamedTemporaryFile(mode='w', delete=False) as f:
+            f.write(new_message)
+            msg_file = f.name
+        
+        try:
+            # Use git commit-tree to create a new commit with the same tree but new message
+            new_commit = self.repo.git.commit_tree(
+                commit.tree.hexsha,
+                p=commit.parents[0].hexsha if commit.parents else None,
+                F=msg_file
+            )
+            
+            # Replace the old commit with the new one
+            self.repo.git.reset('--hard', new_commit)
+        finally:
+            # Clean up the temporary file
+            os.unlink(msg_file)
     
     def get_staged_diff(self) -> str:
         """Get the diff of staged changes."""
