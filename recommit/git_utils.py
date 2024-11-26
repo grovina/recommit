@@ -74,3 +74,7 @@ class GitRepo:
     def checkout_branch(self, branch_name: str):
         """Checkout the specified branch."""
         self.repo.git.checkout(branch_name)
+
+    def update_branch(self, branch_name: str, commit_sha: str):
+        """Update a branch to point to a specific commit."""
+        self.repo.git.branch('-f', branch_name, commit_sha)

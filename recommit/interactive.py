@@ -23,12 +23,19 @@ class InteractiveRewriter:
         
         try:
             # Get commits
-            commits = self.repo.get_commits(count=recent)  # Pass None to get all commits
+            commits = self.repo.get_commits(count=recent)
             self._process_commits(commits)
-        finally:
-            # Always return to original branch
+            
+            # After successful processing, update the original branch
+            current_commit = self.repo.repo.head.commit.hexsha
+            self.repo.update_branch(self.original_branch, current_commit)
             self.repo.checkout_branch(self.original_branch)
-            click.echo(f"\nReturned to branch: {self.original_branch}")
+            
+            if click.confirm("Delete backup branch?", default=True):
+                self.repo.repo.delete_head(backup_branch, force=True)
+
+        except Exception as e:
+            click.echo(f"An error occurred: {e}")
         
     def _process_commits(self, commits: List[Commit]):
         """Process each commit interactively."""
