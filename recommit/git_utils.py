@@ -40,31 +40,40 @@ class GitRepo:
     
     def update_commit_message(self, commit: Commit, new_message: str):
         """Update the message of a specific commit using git rebase."""
+        # Get the commit hash for the parent of our target commit
+        parent = commit.parents[0].hexsha if commit.parents else None
+        target = commit.hexsha
+        
+        # Create a git rebase todo script
+        with tempfile.NamedTemporaryFile(mode='w', delete=False) as f:
+            # Write rebase commands: reword the target commit, pick all others
+            for c in self.repo.iter_commits(f'{parent}..HEAD', reverse=True):
+                action = 'reword' if c.hexsha == target else 'pick'
+                f.write(f'{action} {c.hexsha} {c.message.splitlines()[0]}\n')
+            todo_file = f.name
+            
+        # Create a message file
         with tempfile.NamedTemporaryFile(mode='w', delete=False) as f:
             f.write(new_message)
             msg_file = f.name
-        
-        try:
-            # Get the commit hash for the parent of our target commit
-            parent = commit.parents[0].hexsha if commit.parents else None
-            target = commit.hexsha
             
-            # Use git filter-branch to rewrite the commit message
-            # This rewrites just this commit and preserves the rest of the chain
-            self.repo.git.filter_branch(
-                f'--msg-filter \'if [ "$GIT_COMMIT" = "{target}" ]; then cat "{msg_file}"; else cat; fi\'',
-                f'{parent}..HEAD' if parent else '--root',
-                _env={'GIT_SEQUENCE_EDITOR': ':'}  # Skip opening editor
+        try:
+            # Set up the environment to automate the rebase
+            env = os.environ.copy()
+            env['GIT_SEQUENCE_EDITOR'] = f'cat {todo_file} >'
+            env['EDITOR'] = f'cat {msg_file} >'
+            
+            # Start the rebase from the parent commit
+            base = f'{parent}^' if parent else '--root'
+            self.repo.git.rebase(
+                '-i', base,
+                env=env
             )
             
         finally:
-            # Clean up the temporary file
+            # Clean up temporary files
+            os.unlink(todo_file)
             os.unlink(msg_file)
-            # Clean up the refs/original backup that filter-branch creates
-            backup_dir = os.path.join(self.repo.git_dir, 'refs', 'original')
-            if os.path.exists(backup_dir):
-                import shutil
-                shutil.rmtree(backup_dir)
     
     def get_staged_diff(self) -> str:
         """Get the diff of staged changes."""
