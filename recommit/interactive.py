@@ -25,6 +25,7 @@ class InteractiveRewriter:
         try:
             # Get commits
             commits = self.repo.get_commits(count=recent)
+            click.echo(f"\nProcessing {len(commits)} commits...")
             self._process_commits(commits)
             
             # After successful processing, force update the original branch to our new history
