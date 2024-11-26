@@ -45,18 +45,29 @@ class GitRepo:
         if self.repo.is_dirty(untracked_files=True):
             raise ValueError("Cannot rewrite history with unstaged changes. Please commit or stash them first.")
         
-        # Prepare the commit callback script with the mapping
-        mapping_items = ',\n    '.join(
-            f'"{sha}": "{new_message.replace(\'"\', \'\\\"\')}"' for sha, new_message in commit_message_map.items()
-        )
+        # Create a Python-compatible mapping string with proper escaping
+        mapping_items = []
+        for sha, message in commit_message_map.items():
+            # Escape any quotes in the message
+            escaped_message = message.replace('"', '\\"')
+            mapping_items.append(f'    "{sha}": "{escaped_message}"')
+        
+        mapping_str = ',\n'.join(mapping_items)
+        
         commit_callback = f"""
 commit_mapping = {{
-    {mapping_items}
+{mapping_str}
 }}
 
-if commit.original_id.decode('utf-8') in commit_mapping:
-    commit.message = commit_mapping[commit.original_id.decode('utf-8')].encode('utf-8')
+try:
+    commit_id = commit.original_id.decode('utf-8')
+except AttributeError:
+    commit_id = commit.original_id
+
+if commit_id in commit_mapping:
+    commit.message = commit_mapping[commit_id].encode('utf-8')
 """
+        
         try:
             subprocess.run(
                 [
