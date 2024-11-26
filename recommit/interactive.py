@@ -33,25 +33,31 @@ class InteractiveRewriter:
     def _process_commits(self, commits: List[Commit]):
         """Process each commit interactively."""
         for commit in reversed(commits):  # Start with oldest commit
-            click.echo("\n" + "="*50)
-            click.echo(f"Commit: {click.style(commit.hexsha[:8], fg='yellow')}")
-            click.echo(click.style("Original message:", fg='blue', bold=True))
-            click.echo(click.style(commit.message.strip(), fg='blue'))
+            click.echo("\n" + "="*80)  # Wider separator for better visibility
+            
+            # Header section
+            click.echo(f"Processing commit: {click.style(commit.hexsha[:8], fg='yellow')}")
             click.echo(f"Date: {click.style(str(commit.authored_datetime), fg='cyan')}")
             
-            # Get the diff for this commit
-            diff = self.repo.get_commit_diff(commit)
+            # Original message section
+            click.echo("\n" + click.style("📝 ORIGINAL COMMIT MESSAGE:", fg='blue', bold=True))
+            click.echo("─" * 40)  # Subsection separator
+            click.echo(click.style(commit.message.strip(), fg='blue'))
             
-            # Generate new message
+            # Get the diff and generate new message
+            diff = self.repo.get_commit_diff(commit)
             click.echo("\nGenerating improved message...")
             new_message = self.generator.generate_message(diff, commit.message)
             
-            click.echo(click.style("\nProposed message:", fg='green', bold=True))
+            # Proposed message section
+            click.echo("\n" + click.style("✨ PROPOSED NEW MESSAGE:", fg='green', bold=True))
+            click.echo("─" * 40)  # Subsection separator
             click.echo(click.style(new_message, fg='green'))
             
-            # Ask user what to do
+            # Action prompt
+            click.echo("\n" + click.style("📋 ACTION REQUIRED:", fg='yellow', bold=True))
             choice = click.prompt(
-                "\nWhat would you like to do?",
+                "Choose what to do",
                 type=click.Choice(['accept', 'edit', 'skip', 'quit']),
                 default='accept'
             )
